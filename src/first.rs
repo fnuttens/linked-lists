@@ -4,15 +4,13 @@ pub struct List {
     head: Link,
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 enum Link {
     Empty,
     More(Box<Node>),
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 struct Node {
     elem: i32,
     next: Link,
@@ -30,6 +28,27 @@ impl List {
         });
         self.head = Link::More(new_node);
     }
+
+    pub fn pop(&mut self) -> Option<i32> {
+        match mem::replace(&mut self.head, Link::Empty) {
+            Link::Empty => None,
+            Link::More(node) => {
+                self.head = node.next;
+                Some(node.elem)
+            }
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! list {
+    ( $($elem:expr),+ ) => {{
+        let mut list = List::new();
+        $(
+            list.push($elem);
+        )+
+        list
+    }};
 }
 
 #[cfg(test)]
@@ -42,10 +61,27 @@ mod tests {
         list.push(42);
         assert_eq!(
             Link::More(Box::new(Node {
-            elem: 42,
-            next: Link::Empty,
+                elem: 42,
+                next: Link::Empty,
             })),
             list.head
         );
+    }
+
+    #[test]
+    fn basics() {
+        let mut list = List::new();
+        assert_eq!(None, list.pop());
+
+        let mut list = list![1, 2, 3];
+        assert_eq!(Some(3), list.pop());
+        assert_eq!(Some(2), list.pop());
+
+        list.push(4);
+        list.push(5);
+        assert_eq!(Some(5), list.pop());
+        assert_eq!(Some(4), list.pop());
+        assert_eq!(Some(1), list.pop());
+        assert_eq!(None, list.pop());
     }
 }
