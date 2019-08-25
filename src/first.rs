@@ -1,5 +1,6 @@
 use std::mem;
 
+/// A bad stack
 pub struct List {
     head: Link,
 }
