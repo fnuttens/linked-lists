@@ -3,6 +3,8 @@ pub struct List<T> {
     head: Link<T>,
 }
 
+pub struct IntoIter<T>(List<T>);
+
 type Link<T> = Option<Box<Node<T>>>;
 
 struct Node<T> {
@@ -48,6 +50,23 @@ impl<T> Drop for List<T> {
     }
 }
 
+impl<T> IntoIterator for List<T> {
+    type Item = T;
+    type IntoIter = IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter(self)
+    }
+}
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.pop()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -57,14 +76,11 @@ mod tests {
         let mut list = List::new();
         assert_eq!(None, list.pop());
 
-        list.push(1);
-        list.push(2);
-        list.push(3);
+        list.push(1); list.push(2); list.push(3);
         assert_eq!(Some(3), list.pop());
         assert_eq!(Some(2), list.pop());
 
-        list.push(4);
-        list.push(5);
+        list.push(4); list.push(5);
         assert_eq!(Some(5), list.pop());
         assert_eq!(Some(4), list.pop());
         assert_eq!(Some(1), list.pop());
@@ -80,5 +96,17 @@ mod tests {
         list.push(1); list.push(2); list.push(3);
         assert_eq!(list.peek(), Some(&3));
         assert_eq!(list.peek_mut(), Some(&mut 3));
+    }
+
+    #[test]
+    fn into_iter() {
+        let mut list = List::new();
+        list.push(1); list.push(2); list.push(3);
+
+        let mut iter = list.into_iter();
+        assert_eq!(Some(3), iter.next());
+        assert_eq!(Some(2), iter.next());
+        assert_eq!(Some(1), iter.next());
+        assert_eq!(None, iter.next());
     }
 }
