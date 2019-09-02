@@ -5,6 +5,10 @@ pub struct List<T> {
 
 pub struct IntoIter<T>(List<T>);
 
+pub struct Iter<'a, T> {
+    next: Option<&'a Node<T>>,
+}
+
 type Link<T> = Option<Box<Node<T>>>;
 
 struct Node<T> {
@@ -39,6 +43,12 @@ impl<T> List<T> {
     pub fn peek_mut(&mut self) -> Option<&mut T> {
         self.head.as_mut().map(|node| &mut node.elem)
     }
+
+    pub fn iter(&self) -> Iter<T> {
+        Iter {
+            next: self.head.as_ref().map::<&Node<T>, _>(|node| &node),
+        }
+    }
 }
 
 impl<T> Drop for List<T> {
@@ -67,6 +77,17 @@ impl<T> Iterator for IntoIter<T> {
     }
 }
 
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next.map(|node| {
+            self.next = node.next.as_ref().map::<&Node<T>, _>(|node| &node);
+            &node.elem
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -76,11 +97,14 @@ mod tests {
         let mut list = List::new();
         assert_eq!(None, list.pop());
 
-        list.push(1); list.push(2); list.push(3);
+        list.push(1);
+        list.push(2);
+        list.push(3);
         assert_eq!(Some(3), list.pop());
         assert_eq!(Some(2), list.pop());
 
-        list.push(4); list.push(5);
+        list.push(4);
+        list.push(5);
         assert_eq!(Some(5), list.pop());
         assert_eq!(Some(4), list.pop());
         assert_eq!(Some(1), list.pop());
@@ -93,7 +117,9 @@ mod tests {
         assert_eq!(list.peek(), None);
         assert_eq!(list.peek_mut(), None);
 
-        list.push(1); list.push(2); list.push(3);
+        list.push(1);
+        list.push(2);
+        list.push(3);
         assert_eq!(list.peek(), Some(&3));
         assert_eq!(list.peek_mut(), Some(&mut 3));
     }
@@ -101,12 +127,27 @@ mod tests {
     #[test]
     fn into_iter() {
         let mut list = List::new();
-        list.push(1); list.push(2); list.push(3);
+        list.push(1);
+        list.push(2);
+        list.push(3);
 
         let mut iter = list.into_iter();
         assert_eq!(Some(3), iter.next());
         assert_eq!(Some(2), iter.next());
         assert_eq!(Some(1), iter.next());
         assert_eq!(None, iter.next());
+    }
+
+    #[test]
+    fn iter() {
+        let mut list = List::new();
+        list.push(1);
+        list.push(2);
+        list.push(3);
+
+        let mut iter = list.iter();
+        assert_eq!(Some(&3), iter.next());
+        assert_eq!(Some(&2), iter.next());
+        assert_eq!(Some(&1), iter.next());
     }
 }
